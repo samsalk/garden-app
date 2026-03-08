@@ -263,6 +263,8 @@ html, body, #root {
   .bottom-tab-bar { display: flex; }
   .content { padding: .9rem; padding-bottom: 68px; }
   .row2, .row4 { grid-template-columns: 1fr 1fr; }
+  /* Prevent iOS Safari from auto-zooming on input focus (requires font-size >= 16px) */
+  .inp, .sel-i, .ta, .mp-search, .mp-span-inp, .water-freq-inp { font-size: 16px; }
   .list-table th:nth-child(4), .list-table td:nth-child(4),
   .list-table th:nth-child(5), .list-table td:nth-child(5) { display: none; }
   .mob-garden-bar {
@@ -315,6 +317,20 @@ html, body, #root {
 .care-sched-icon { width: 1.2rem; text-align: center; flex-shrink: 0; }
 .care-sched-label { width: 90px; color: var(--ink); font-weight: 500; flex-shrink: 0; }
 .care-sched-unit { font-size: .68rem; color: var(--mut); min-width: 60px; }
+
+/* Advanced toggle (care schedule collapse) */
+.adv-toggle {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  padding: .38rem .6rem; border: 1.5px solid var(--bdr); border-radius: 6px;
+  background: var(--Cd); cursor: pointer; font-family: var(--font-body);
+  font-size: .76rem; font-weight: 600; color: var(--ink); text-align: left;
+}
+.adv-toggle:hover { background: var(--bdr); }
+.adv-badge {
+  display: inline-flex; align-items: center; padding: .1rem .45rem;
+  border-radius: 20px; font-size: .65rem; font-weight: 700;
+  background: var(--T); color: #fff;
+}
 
 /* WATERING FREQ (zone header) */
 .water-freq-bar { display: flex; align-items: center; gap: .5rem; font-size: .78rem; color: var(--mut); padding: .4rem .75rem; background: var(--Cd); border-radius: 6px; margin-bottom: .85rem; flex-wrap: wrap; }

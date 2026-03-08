@@ -13,7 +13,8 @@ export function DetailModal({ cell, cellKey, zoneName, zone, allPlants, onCustom
   const [notes,      setNotes]      = useState(cell.notes       || "");
   const [spanW,      setSpanW]      = useState(cell.spanW       || 1);
   const [spanH,      setSpanH]      = useState(cell.spanH       || 1);
-  const [customMode, setCustomMode] = useState(false);
+  const [customMode,    setCustomMode]    = useState(false);
+  const [showAdvCare,   setShowAdvCare]   = useState(false);
   const [nextUpPlant, setNextUpPlant] = useState(cell.nextUp?.plantId  || "");
   const [nextUpDate,  setNextUpDate]  = useState(cell.nextUp?.targetDate || "");
   const [cName,      setCName]      = useState("");
@@ -209,35 +210,56 @@ export function DetailModal({ cell, cellKey, zoneName, zone, allPlants, onCustom
           </div>
         </div>
 
-        {/* Care schedule */}
-        <div className="field" style={{ marginTop: ".9rem" }}>
-          <label className="lbl">Care Schedule <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, color: "var(--mut)" }}>— blank = plant default · 0 = skip</span></label>
-          <div className="care-sched-grid">
-            {PLANT_CARE_TYPES.map(t => {
-              const def = effectiveDefault(t);
-              const plantSkips = plant?.careDefaults?.[t] === null;
-              return (
-                <div key={t} className="care-sched-row">
-                  <span className="care-sched-icon">{CARE_ICONS[t]}</span>
-                  <span className="care-sched-label">{CARE_LABELS[t]}</span>
-                  <input
-                    type="number" min={0} max={365}
-                    className="mp-span-inp"
-                    value={careOverrides[t]}
-                    placeholder={plantSkips ? "—" : String(def)}
-                    disabled={plantSkips}
-                    onChange={e => setCareOverrides(prev => ({ ...prev, [t]: e.target.value }))}
-                    style={{ width: 48 }}
-                    title={plantSkips ? "Plant default: skip" : `Plant default: every ${def} days`}
-                  />
-                  <span className="care-sched-unit" style={{ color: careOverrides[t] === "0" ? "var(--color-critical)" : "var(--mut)" }}>
-                    {careOverrides[t] === "0" ? "skip" : careOverrides[t] ? "days" : "d (default)"}
-                  </span>
+        {/* Care schedule — collapsible */}
+        {(() => {
+          const activeOverrides = PLANT_CARE_TYPES.filter(t => careOverrides[t] !== "").length;
+          return (
+            <div className="field" style={{ marginTop: ".9rem" }}>
+              <button
+                className="adv-toggle"
+                onClick={() => setShowAdvCare(v => !v)}
+              >
+                <span>⚙️ Care Schedule</span>
+                <span style={{ display: "flex", alignItems: "center", gap: ".35rem" }}>
+                  {activeOverrides > 0 && !showAdvCare && (
+                    <span className="adv-badge">{activeOverrides} override{activeOverrides > 1 ? "s" : ""}</span>
+                  )}
+                  <span style={{ fontSize: ".7rem", color: "var(--mut)", fontWeight: 400 }}>{showAdvCare ? "▲ hide" : "▼ show"}</span>
+                </span>
+              </button>
+              {showAdvCare && (
+                <div style={{ marginTop: ".55rem" }}>
+                  <div style={{ fontSize: ".68rem", color: "var(--mut)", marginBottom: ".45rem" }}>Blank = plant default · 0 = skip this task</div>
+                  <div className="care-sched-grid">
+                    {PLANT_CARE_TYPES.map(t => {
+                      const def = effectiveDefault(t);
+                      const plantSkips = plant?.careDefaults?.[t] === null;
+                      return (
+                        <div key={t} className="care-sched-row">
+                          <span className="care-sched-icon">{CARE_ICONS[t]}</span>
+                          <span className="care-sched-label">{CARE_LABELS[t]}</span>
+                          <input
+                            type="number" min={0} max={365}
+                            className="mp-span-inp"
+                            value={careOverrides[t]}
+                            placeholder={plantSkips ? "—" : String(def)}
+                            disabled={plantSkips}
+                            onChange={e => setCareOverrides(prev => ({ ...prev, [t]: e.target.value }))}
+                            style={{ width: 48 }}
+                            title={plantSkips ? "Plant default: skip" : `Plant default: every ${def} days`}
+                          />
+                          <span className="care-sched-unit" style={{ color: careOverrides[t] === "0" ? "var(--color-critical)" : "var(--mut)" }}>
+                            {careOverrides[t] === "0" ? "skip" : careOverrides[t] ? "days" : "d (default)"}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Next Up */}
         {["growing", "harvested", "failed"].includes(status) && (
