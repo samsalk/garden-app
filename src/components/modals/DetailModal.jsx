@@ -8,6 +8,7 @@ import { useDragToClose } from "@/hooks/useDragToClose";
 export function DetailModal({ cell, cellKey, zoneName, zone, allPlants, onCustomPlant, onSave, onClear, onClose }) {
   const [r, c] = cellKey.split(",").map(Number);
   const [plantId,    setPlantId]    = useState(cell.plantId     || "");
+  const [variety,    setVariety]    = useState(cell.variety     || "");
   const [status,     setStatus]     = useState(cell.status      || "planted");
   const [plantedDt,  setPlantedDt]  = useState(cell.plantedDate || "");
   const [harvestDt,  setHarvestDt]  = useState(cell.harvestDate || "");
@@ -66,29 +67,38 @@ export function DetailModal({ cell, cellKey, zoneName, zone, allPlants, onCustom
         <div className="modal-drag" {...dragHandleProps}/>
         <div className="modal-title">
           {zoneName} · Row {r+1}, Col {c+1}
-          {plant && <span style={{ fontWeight: 400, fontStyle: "italic", marginLeft: ".5rem", color: "var(--mut)", fontSize: ".9rem" }}>{plant.emoji} {plant.name}</span>}
+          {plant && <span style={{ fontWeight: 400, fontStyle: "italic", marginLeft: ".5rem", color: "var(--mut)", fontSize: ".9rem" }}>{plant.emoji} {variety || plant.name}</span>}
         </div>
 
-        {/* Plant */}
-        <div className="field">
-          <label className="lbl">Plant</label>
-          <select className="sel-i" value={plantId} onChange={e => { setPlantId(e.target.value); syncHarvest(e.target.value, plantedDt); }}>
-            <option value="">— select —</option>
-            {["vegetable","fruit","herb","flower","custom"].map(type => {
-              const grp = allPlants.filter(p => p.type === type);
-              if (!grp.length) return null;
-              return (
-                <optgroup key={type} label={type.charAt(0).toUpperCase()+type.slice(1)+"s"}>
-                  {grp.map(p => <option key={p.id} value={p.id}>{p.emoji} {p.name}</option>)}
-                </optgroup>
-              );
-            })}
-          </select>
+        {/* Plant + Variety — side by side */}
+        <div className="row2" style={{ marginBottom: ".85rem" }}>
+          <div className="field" style={{ marginBottom: 0 }}>
+            <label className="lbl">Plant</label>
+            <select className="sel-i" value={plantId} onChange={e => { setPlantId(e.target.value); setVariety(""); syncHarvest(e.target.value, plantedDt); }}>
+              <option value="">— select —</option>
+              {["vegetable","fruit","herb","flower","custom"].map(type => {
+                const grp = allPlants.filter(p => p.type === type);
+                if (!grp.length) return null;
+                return (
+                  <optgroup key={type} label={type.charAt(0).toUpperCase()+type.slice(1)+"s"}>
+                    {grp.map(p => <option key={p.id} value={p.id}>{p.emoji} {p.name}</option>)}
+                  </optgroup>
+                );
+              })}
+            </select>
+          </div>
+          <div className="field" style={{ marginBottom: 0 }}>
+            <label className="lbl">Variety <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(optional)</span></label>
+            <input className="inp" value={variety} onChange={e => setVariety(e.target.value)}
+              placeholder={plant ? `e.g. ${plant.id === "tomato" ? "Cherokee Purple" : plant.id === "pepper" ? "Shishito" : plant.id === "lettuce" ? "Buttercrunch" : "specific variety…"}` : "specific variety…"}
+              disabled={!plantId}
+            />
+          </div>
         </div>
 
         {plant?.dth && (
           <div className="pib">
-            <strong>{plant.name}</strong> · {plant.type} · ~{plant.dth} days to harvest · {plant.spacing}
+            <strong>{variety || plant.name}</strong>{variety ? <span style={{ color: "var(--mut)", fontWeight: 400 }}> ({plant.name})</span> : null} · {plant.type} · ~{plant.dth} days to harvest · {plant.spacing}
             {plant.notes && <div style={{ marginTop: 2, fontStyle: "italic" }}>💡 {plant.notes}</div>}
           </div>
         )}
@@ -119,10 +129,10 @@ export function DetailModal({ cell, cellKey, zoneName, zone, allPlants, onCustom
           {spanChanged && !resizeFits && <div style={{ fontSize: ".72rem", color: "#b00", marginTop: ".35rem" }}>⚠️ New size doesn't fit.</div>}
         </div>
 
-        {/* Custom plant / variety */}
+        {/* Custom plant — for species not in the built-in library */}
         {!customMode && (
           <button className="btn-s" style={{ marginBottom: ".85rem", fontSize: ".75rem", padding: ".3rem .7rem" }} onClick={() => setCustomMode(true)}>
-            + Add custom plant / variety
+            + Create custom plant
           </button>
         )}
         {customMode && (
@@ -318,7 +328,7 @@ export function DetailModal({ cell, cellKey, zoneName, zone, allPlants, onCustom
         <div className="m-acts">
           <button className="btn-p" disabled={!plantId || (spanChanged && !resizeFits)}
             onClick={() => onSave({
-              plantId, status,
+              plantId, variety: variety.trim() || undefined, status,
               plantedDate: plantedDt,
               harvestDate: harvestDt,
               notes, spanW, spanH,

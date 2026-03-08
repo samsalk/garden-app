@@ -71,7 +71,7 @@ export function useCareEngine(data, allPlants) {
             const urgency = classify(careType, daysOverdue);
             if (!urgency) return;
 
-            const task = { taskType: "plant", plant, zone, garden, cellKey, careType, daysOverdue, urgency };
+            const task = { taskType: "plant", plant, variety: cell.variety || "", zone, garden, cellKey, careType, daysOverdue, urgency };
             if (urgency === "critical") critical.push(task);
             else if (urgency === "due") due.push(task);
             else soon.push(task);

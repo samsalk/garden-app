@@ -75,12 +75,13 @@ export function ZonePlantGrid({ zone, allPlants, activePlant, onCellClick, onCel
           onMouseDown={()=>{ dragging.current=true; painted.current=new Set(); if(activePlant){onCellPaint(key);painted.current.add(key);} }}
           onMouseEnter={()=>{ if(!dragging.current||!activePlant)return; if(!painted.current.has(key)){onCellPaint(key);painted.current.add(key);} }}
           onClick={()=>{ if(!activePlant)onCellClick(key); }}
-          title={plant?`${plant.emoji} ${plant.name}${isSpan?` (${spanW}×${spanH} sqft)`:""}`:activePlant?"Click/drag to paint":"Click to assign"}
+          title={plant?`${plant.emoji} ${cell.variety || plant.name}${cell.variety ? ` (${plant.name})` : ""}${isSpan?` · ${spanW}×${spanH} sqft`:""}`:activePlant?"Click/drag to paint":"Click to assign"}
         >
           {plant ? (
             <>
               <span className="pcell-emoji">{plant.emoji}</span>
-              {isSpan && <span className="pcell-span-label">{spanW}×{spanH} sqft</span>}
+              {cell.variety && !isSpan && <span className="pcell-variety">{cell.variety.slice(0, 9)}{cell.variety.length > 9 ? "…" : ""}</span>}
+              {isSpan && <span className="pcell-span-label">{cell.variety ? cell.variety.slice(0,7)+(cell.variety.length>7?"…":"") : `${spanW}×${spanH} sqft`}</span>}
               {sdot && <div className="pcell-dot" style={{background:sdot.color}}/>}
               {nextUpPlant && <span className="pcell-nextup" title={`Next up: ${nextUpPlant.name}`}>{nextUpPlant.emoji}</span>}
             </>

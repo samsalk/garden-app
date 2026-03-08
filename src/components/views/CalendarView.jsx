@@ -69,7 +69,8 @@ export function CalendarView({ gardens, allPlants }) {
                 <div style={{ fontSize: "1.7rem", flexShrink: 0, opacity: item.queued ? .55 : 1 }}>{item.plant.emoji}</div>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: ".9rem", opacity: item.queued ? .7 : 1 }}>
-                    {item.plant.name}
+                    {item.cell.variety || item.plant.name}
+                    {item.cell.variety && <span style={{ fontWeight: 400, color: "var(--mut)", fontSize: ".78rem", marginLeft: ".25rem" }}>· {item.plant.name}</span>}
                     {item.queued && <span style={{ fontSize: ".68rem", background: "rgba(74,106,58,.15)", color: "var(--color-planted)", borderRadius: 4, padding: ".08rem .35rem", marginLeft: ".4rem", fontWeight: 500 }}>queued</span>}
                     {(sw > 1 || sh > 1) && !item.queued && <span style={{ fontSize: ".72rem", color: "var(--T)", fontWeight: 600, marginLeft: ".4rem" }}>{sw}×{sh}sqft</span>}
                   </div>
