@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { genId, nowISO } from "@/utils/date";
+import { useDragToClose } from "@/hooks/useDragToClose";
 
 export function AddGardenModal({ onAdd, onClose }) {
   const [name, setName] = useState("");
   const [w, setW] = useState(10);
   const [h, setH] = useState(6);
+  const { modalStyle, handleProps } = useDragToClose(onClose);
   return (
     <div className="overlay" onClick={onClose}>
-      <div className="modal" onClick={e=>e.stopPropagation()}>
-        <div className="modal-drag"/>
+      <div className="modal" style={modalStyle} onClick={e=>e.stopPropagation()}>
+        <div className="modal-drag" {...handleProps}/>
         <div className="modal-title">New Garden</div>
         <div className="hint-box">Your overall outdoor space. You'll divide it into raised beds, containers, and paths next.</div>
         <div className="field">

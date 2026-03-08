@@ -3,6 +3,7 @@ import { genId, nowISO } from "@/utils/date";
 import { ZONE_TYPES } from "@/constants/zones";
 import { rectsOverlap } from "@/utils/grid";
 import { DEFAULT_FREQ } from "@/constants/care";
+import { useDragToClose } from "@/hooks/useDragToClose";
 
 export function AddZoneModal({ rect, gardenW, gardenH, existingZones=[], onAdd, onClose }) {
   const [name, setName] = useState("");
@@ -11,6 +12,7 @@ export function AddZoneModal({ rect, gardenW, gardenH, existingZones=[], onAdd, 
   const [y, setY] = useState(rect?rect.y:0);
   const [w, setW] = useState(rect?rect.w:2);
   const [h, setH] = useState(rect?rect.h:4);
+  const { modalStyle, handleProps } = useDragToClose(onClose);
 
   const p = { x:parseInt(x)||0, y:parseInt(y)||0, w:parseInt(w)||1, h:parseInt(h)||1 };
   const outOfBounds = p.x+p.w>gardenW || p.y+p.h>gardenH || p.x<0 || p.y<0;
@@ -19,8 +21,8 @@ export function AddZoneModal({ rect, gardenW, gardenH, existingZones=[], onAdd, 
 
   return (
     <div className="overlay" onClick={onClose}>
-      <div className="modal" onClick={e=>e.stopPropagation()}>
-        <div className="modal-drag"/>
+      <div className="modal" style={modalStyle} onClick={e=>e.stopPropagation()}>
+        <div className="modal-drag" {...handleProps}/>
         <div className="modal-title">{rect?`New Zone · ${rect.w}×${rect.h} ft`:"Add Zone"}</div>
         <div className="field">
           <label className="lbl">Name</label>

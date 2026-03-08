@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { geocodeZip } from "@/hooks/useWeather";
+import { useDragToClose } from "@/hooks/useDragToClose";
 
 export function SettingsModal({ settings, onSave, onClose, onExport, onImport }) {
   const loc = settings.location || {};
@@ -11,6 +12,7 @@ export function SettingsModal({ settings, onSave, onClose, onExport, onImport })
   const [frost,  setFrost]  = useState(settings.frostThresholdF ?? 35);
   const [busy,   setBusy]   = useState(false);
   const [err,    setErr]    = useState(null);
+  const { modalStyle, handleProps } = useDragToClose(onClose);
 
   async function handleLookup() {
     if (!zip.trim()) return;
@@ -37,8 +39,8 @@ export function SettingsModal({ settings, onSave, onClose, onExport, onImport })
 
   return (
     <div className="overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-drag"/>
+      <div className="modal" style={modalStyle} onClick={e => e.stopPropagation()}>
+        <div className="modal-drag" {...handleProps}/>
         <div className="modal-title">⚙️ Settings</div>
 
         <div className="field">

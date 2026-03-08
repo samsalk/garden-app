@@ -3,6 +3,7 @@ import { SPAN_PRESETS, STATUSES } from "@/constants/ui";
 import { PLANT_CARE_TYPES, CARE_ICONS, CARE_LABELS, DEFAULT_FREQ } from "@/constants/care";
 import { spanFits } from "@/utils/grid";
 import { addDays, genId } from "@/utils/date";
+import { useDragToClose } from "@/hooks/useDragToClose";
 
 export function DetailModal({ cell, cellKey, zoneName, zone, allPlants, onCustomPlant, onSave, onClear, onClose }) {
   const [r, c] = cellKey.split(",").map(Number);
@@ -15,6 +16,7 @@ export function DetailModal({ cell, cellKey, zoneName, zone, allPlants, onCustom
   const [spanH,      setSpanH]      = useState(cell.spanH       || 1);
   const [customMode,    setCustomMode]    = useState(false);
   const [showAdvCare,   setShowAdvCare]   = useState(false);
+  const { modalStyle, handleProps: dragHandleProps } = useDragToClose(onClose);
   const [nextUpPlant, setNextUpPlant] = useState(cell.nextUp?.plantId  || "");
   const [nextUpDate,  setNextUpDate]  = useState(cell.nextUp?.targetDate || "");
   const [cName,      setCName]      = useState("");
@@ -60,8 +62,8 @@ export function DetailModal({ cell, cellKey, zoneName, zone, allPlants, onCustom
 
   return (
     <div className="overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-drag"/>
+      <div className="modal" style={modalStyle} onClick={e => e.stopPropagation()}>
+        <div className="modal-drag" {...dragHandleProps}/>
         <div className="modal-title">
           {zoneName} · Row {r+1}, Col {c+1}
           {plant && <span style={{ fontWeight: 400, fontStyle: "italic", marginLeft: ".5rem", color: "var(--mut)", fontSize: ".9rem" }}>{plant.emoji} {plant.name}</span>}
