@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { geocodeZip } from "@/hooks/useWeather";
 
-export function SettingsModal({ settings, onSave, onClose }) {
+export function SettingsModal({ settings, onSave, onClose, onExport, onImport }) {
   const loc = settings.location || {};
   const [zip,    setZip]    = useState(loc.zip   || "");
   const [city,   setCity]   = useState(loc.city  || "");
@@ -31,7 +31,6 @@ export function SettingsModal({ settings, onSave, onClose }) {
       location: { lat: lat || null, lng: lng || null, zip, city, state },
       frostThresholdF:   parseInt(frost) || 35,
       weatherCacheHours: settings.weatherCacheHours ?? 3,
-      // Clear weather cache when location changes
       weatherCache: null,
     });
   }
@@ -74,6 +73,21 @@ export function SettingsModal({ settings, onSave, onClose }) {
           />
           <div style={{ fontSize: ".72rem", color: "var(--mut)", marginTop: ".25rem" }}>
             Alert shows when any day's low is below this temperature.
+          </div>
+        </div>
+
+        <div className="field">
+          <label className="lbl">Data</label>
+          <div style={{ display: "flex", gap: ".5rem" }}>
+            <button className="btn-s" style={{ flex: 1 }} onClick={() => { onExport?.(); onClose(); }}>
+              ⬇ Export JSON
+            </button>
+            <button className="btn-s" style={{ flex: 1 }} onClick={() => { onImport?.(); onClose(); }}>
+              ⬆ Import JSON
+            </button>
+          </div>
+          <div style={{ fontSize: ".72rem", color: "var(--mut)", marginTop: ".25rem" }}>
+            Export backs up all gardens, plants, and settings.
           </div>
         </div>
 
