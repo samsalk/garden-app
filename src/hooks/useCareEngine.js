@@ -46,9 +46,11 @@ export function useCareEngine(data, allPlants) {
           else soon.unshift(task);
         }
 
-        // Plant care per cell
+        // Plant care per cell — only for actively growing plants
+        const ACTIVE_STATUSES = new Set(["planted", "growing"]);
         Object.entries(zone.cells || {}).forEach(([cellKey, cell]) => {
           if (!cell.plantId || cell.occupiedBy) return;
+          if (!ACTIVE_STATUSES.has(cell.status)) return;   // skip planned / harvested / failed
           const plant = allPlants.find(p => p.id === cell.plantId);
           if (!plant) return;
 
