@@ -5,6 +5,97 @@ import { spanFits } from "@/utils/grid";
 import { addDays, genId } from "@/utils/date";
 import { BottomSheet } from "@/components/modals/BottomSheet";
 
+// ── Sub-view: custom plant / variety creation ─────────────────────────────
+function CustomPlantView({ allPlants, onAdd, onCancel }) {
+  const [cName,    setCName]    = useState("");
+  const [cEmoji,   setCEmoji]   = useState("🌱");
+  const [cBaseId,  setCBaseId]  = useState("");
+  const [cDth,     setCDth]     = useState("");
+  const [cSpacing, setCSpacing] = useState("");
+  const [cNotes,   setCNotes]   = useState("");
+
+  const basePlants = allPlants.filter(p => p.type !== "custom");
+  const base = cBaseId ? allPlants.find(p => p.id === cBaseId) : null;
+
+  function handleAdd() {
+    if (!cName.trim()) return;
+    const parsedDth = parseInt(cDth);
+    const p = {
+      id: "custom-" + genId(),
+      name: cName.trim(), type: "custom", emoji: cEmoji,
+      color: base?.color || "#5a7a50",
+      baseId: cBaseId || undefined,
+      dth:     !isNaN(parsedDth) && parsedDth > 0 ? parsedDth : base?.dth,
+      spacing: cSpacing.trim() || base?.spacing,
+      notes:   cNotes.trim()   || base?.notes,
+      defaultSpan:  base?.defaultSpan || [1,1],
+      careDefaults: base?.careDefaults,
+    };
+    onAdd(p);
+  }
+
+  return (
+    <BottomSheet onClose={onCancel}>
+      <div className="modal-title">New Custom Plant</div>
+
+      <div className="field">
+        <label className="lbl">Based on <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(optional — inherits defaults)</span></label>
+        <select className="sel-i" value={cBaseId} onChange={e => setCBaseId(e.target.value)}>
+          <option value="">— none / from scratch —</option>
+          {basePlants.map(p => <option key={p.id} value={p.id}>{p.emoji} {p.name}</option>)}
+        </select>
+        {base && (
+          <div style={{ fontSize: ".7rem", color: "var(--mut)", marginTop: ".25rem" }}>
+            ↳ inherits: {base.dth} days to harvest, {base.spacing}{base.notes ? `, ${base.notes}` : ""}
+          </div>
+        )}
+      </div>
+
+      <div className="row2" style={{ marginBottom: ".65rem" }}>
+        <div className="field" style={{ marginBottom: 0 }}>
+          <label className="lbl">Name <span style={{ color: "var(--color-critical)" }}>*</span></label>
+          <input className="inp" value={cName} onChange={e => setCName(e.target.value)}
+            placeholder={base ? `e.g. Cherry ${base.name}` : "e.g. Cherry Tomato"}
+            autoFocus
+          />
+        </div>
+        <div className="field" style={{ marginBottom: 0 }}>
+          <label className="lbl">Emoji</label>
+          <input className="inp" value={cEmoji} onChange={e => setCEmoji(e.target.value)} maxLength={2}/>
+        </div>
+      </div>
+
+      <div className="row2" style={{ marginBottom: ".65rem" }}>
+        <div className="field" style={{ marginBottom: 0 }}>
+          <label className="lbl">Days to Harvest</label>
+          <input type="number" className="inp" min={1} max={999} value={cDth}
+            placeholder={base ? String(base.dth || "") : "e.g. 65"}
+            onChange={e => setCDth(e.target.value)}/>
+        </div>
+        <div className="field" style={{ marginBottom: 0 }}>
+          <label className="lbl">Spacing</label>
+          <input className="inp" value={cSpacing}
+            placeholder={base ? (base.spacing || "") : "e.g. 4/sqft"}
+            onChange={e => setCSpacing(e.target.value)}/>
+        </div>
+      </div>
+
+      <div className="field">
+        <label className="lbl">Notes</label>
+        <input className="inp" value={cNotes}
+          placeholder={base ? (base.notes || "Optional notes…") : "Optional notes…"}
+          onChange={e => setCNotes(e.target.value)}/>
+      </div>
+
+      <div className="m-acts">
+        <button className="btn-p" disabled={!cName.trim()} onClick={handleAdd}>Add Plant</button>
+        <button className="btn-s" onClick={onCancel}>Cancel</button>
+      </div>
+    </BottomSheet>
+  );
+}
+
+// ── Main Detail Modal ─────────────────────────────────────────────────────
 export function DetailModal({ cell, cellKey, zoneName, zone, allPlants, onCustomPlant, onSave, onClear, onClose }) {
   const [r, c] = cellKey.split(",").map(Number);
   const [plantId,    setPlantId]    = useState(cell.plantId     || "");
@@ -15,16 +106,11 @@ export function DetailModal({ cell, cellKey, zoneName, zone, allPlants, onCustom
   const [notes,      setNotes]      = useState(cell.notes       || "");
   const [spanW,      setSpanW]      = useState(cell.spanW       || 1);
   const [spanH,      setSpanH]      = useState(cell.spanH       || 1);
-  const [customMode,    setCustomMode]    = useState(false);
-  const [showAdvCare,   setShowAdvCare]   = useState(false);
+  const [showAdvCare,  setShowAdvCare]  = useState(false);
+  const [showCustom,   setShowCustom]   = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
   const [nextUpPlant, setNextUpPlant] = useState(cell.nextUp?.plantId  || "");
   const [nextUpDate,  setNextUpDate]  = useState(cell.nextUp?.targetDate || "");
-  const [cName,      setCName]      = useState("");
-  const [cEmoji,     setCEmoji]     = useState("🌱");
-  const [cBaseId,    setCBaseId]    = useState("");
-  const [cDth,       setCDth]       = useState("");
-  const [cSpacing,   setCSpacing]   = useState("");
-  const [cNotes,     setCNotes]     = useState("");
 
   // Care schedule overrides: "" = use plant default, "0" = skip, "N" = every N days
   const [careOverrides, setCareOverrides] = useState(() => {
@@ -58,7 +144,16 @@ export function DetailModal({ cell, cellKey, zoneName, zone, allPlants, onCustom
     return cs;
   }
 
-  const basePlants = allPlants.filter(p => p.type !== "custom");
+  // Show custom plant sub-view as its own overlay
+  if (showCustom) {
+    return (
+      <CustomPlantView
+        allPlants={allPlants}
+        onAdd={p => { onCustomPlant(p); setPlantId(p.id); setShowCustom(false); }}
+        onCancel={() => setShowCustom(false)}
+      />
+    );
+  }
 
   return (
     <BottomSheet onClose={onClose}>
@@ -110,9 +205,18 @@ export function DetailModal({ cell, cellKey, zoneName, zone, allPlants, onCustom
           </div>
         )}
 
-        {/* Span */}
+        {/* Custom plant button — opens dedicated sub-view */}
+        <button
+          className="btn-s"
+          style={{ marginBottom: ".85rem", fontSize: ".75rem", padding: ".3rem .7rem" }}
+          onClick={() => setShowCustom(true)}
+        >
+          + Create custom plant / variety
+        </button>
+
+        {/* Space Needed */}
         <div className="field">
-          <label className="lbl">Plant Size (sq ft) — current {cell.spanW||1}×{cell.spanH||1}</label>
+          <label className="lbl">Space Needed (sq ft) — current {cell.spanW||1}×{cell.spanH||1}</label>
           <div style={{ display: "flex", flexWrap: "wrap", gap: ".35rem", marginBottom: ".4rem" }}>
             {SPAN_PRESETS.map(p => {
               const active = spanW === p.w && spanH === p.h;
@@ -135,74 +239,6 @@ export function DetailModal({ cell, cellKey, zoneName, zone, allPlants, onCustom
           </div>
           {spanChanged && !resizeFits && <div style={{ fontSize: ".72rem", color: "#b00", marginTop: ".35rem" }}>⚠️ New size doesn't fit.</div>}
         </div>
-
-        {/* Custom plant — for species not in the built-in library */}
-        {!customMode && (
-          <button className="btn-s" style={{ marginBottom: ".85rem", fontSize: ".75rem", padding: ".3rem .7rem" }} onClick={() => setCustomMode(true)}>
-            + Create custom plant
-          </button>
-        )}
-        {customMode && (
-          <div style={{ background: "var(--C)", border: "1px solid var(--bdr)", borderRadius: 8, padding: ".75rem", marginBottom: ".85rem" }}>
-            <div style={{ fontWeight: 600, fontSize: ".75rem", color: "var(--mut)", marginBottom: ".5rem" }}>Custom Plant / Variety</div>
-            <div className="field">
-              <label className="lbl">Based on (optional)</label>
-              <select className="sel-i" value={cBaseId} onChange={e => setCBaseId(e.target.value)}>
-                <option value="">— none / from scratch —</option>
-                {basePlants.map(p => <option key={p.id} value={p.id}>{p.emoji} {p.name}</option>)}
-              </select>
-              {cBaseId && (() => {
-                const base = allPlants.find(p => p.id === cBaseId);
-                return base ? <div style={{ fontSize: ".7rem", color: "var(--mut)", marginTop: ".25rem" }}>↳ inherits: {base.dth} days, {base.spacing}{base.notes ? `, ${base.notes}` : ""}</div> : null;
-              })()}
-            </div>
-            <div className="row2" style={{ marginBottom: ".5rem" }}>
-              <div><label className="lbl">Name</label><input className="inp" value={cName} onChange={e => setCName(e.target.value)} placeholder="e.g. Cherry Tomato"/></div>
-              <div><label className="lbl">Emoji</label><input className="inp" value={cEmoji} onChange={e => setCEmoji(e.target.value)} maxLength={2}/></div>
-            </div>
-            <div className="row2" style={{ marginBottom: ".5rem" }}>
-              <div>
-                <label className="lbl">Days to Harvest</label>
-                <input type="number" className="inp" min={1} max={999} value={cDth}
-                  placeholder={cBaseId ? String(allPlants.find(p=>p.id===cBaseId)?.dth || "") : "e.g. 65"}
-                  onChange={e => setCDth(e.target.value)}/>
-              </div>
-              <div>
-                <label className="lbl">Spacing</label>
-                <input className="inp" value={cSpacing}
-                  placeholder={cBaseId ? (allPlants.find(p=>p.id===cBaseId)?.spacing || "") : "e.g. 4/sqft"}
-                  onChange={e => setCSpacing(e.target.value)}/>
-              </div>
-            </div>
-            <div style={{ marginBottom: ".5rem" }}>
-              <label className="lbl">Notes</label>
-              <input className="inp" value={cNotes}
-                placeholder={cBaseId ? (allPlants.find(p=>p.id===cBaseId)?.notes || "Optional notes…") : "Optional notes…"}
-                onChange={e => setCNotes(e.target.value)}/>
-            </div>
-            <div style={{ display: "flex", gap: ".4rem" }}>
-              <button className="btn-p" style={{ fontSize: ".78rem", padding: ".35rem .75rem" }} onClick={() => {
-                if (!cName.trim()) return;
-                const base = cBaseId ? allPlants.find(p => p.id === cBaseId) : null;
-                const parsedDth = parseInt(cDth);
-                const p = {
-                  id: "custom-" + genId(),
-                  name: cName.trim(), type: "custom", emoji: cEmoji,
-                  color: base?.color || "#5a7a50",
-                  baseId: cBaseId || undefined,
-                  dth:     !isNaN(parsedDth) && parsedDth > 0 ? parsedDth : base?.dth,
-                  spacing: cSpacing.trim() || base?.spacing,
-                  notes:   cNotes.trim()   || base?.notes,
-                  defaultSpan:  base?.defaultSpan || [1,1],
-                  careDefaults: base?.careDefaults,
-                };
-                onCustomPlant(p); setPlantId(p.id); setCustomMode(false);
-                setCName(""); setCEmoji("🌱"); setCBaseId(""); setCDth(""); setCSpacing(""); setCNotes("");
-              }}>Add</button>
-              <button className="btn-s" style={{ fontSize: ".78rem", padding: ".35rem .75rem" }} onClick={() => setCustomMode(false)}>Cancel</button>
-            </div>
-          </div>
-        )}
 
         {/* Status */}
         <div className="field">
@@ -229,7 +265,7 @@ export function DetailModal({ cell, cellKey, zoneName, zone, allPlants, onCustom
           </div>
         </div>
 
-        {/* Care schedule — collapsible */}
+        {/* Care schedule — collapsible, collapsed by default */}
         {(() => {
           const activeOverrides = PLANT_CARE_TYPES.filter(t => careOverrides[t] !== "").length;
           return (
@@ -332,6 +368,21 @@ export function DetailModal({ cell, cellKey, zoneName, zone, allPlants, onCustom
           <textarea className="ta" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Variety, amendments, observations…"/>
         </div>
 
+        {/* Clear Cell confirmation banner */}
+        {confirmClear && (
+          <div style={{
+            background: "#fff5f5", border: "1px solid #f5c6c6", borderRadius: 8,
+            padding: ".65rem .85rem", marginTop: ".75rem",
+            fontSize: ".82rem", color: "#800",
+          }}>
+            Remove {plant ? `${plant.emoji} ${variety || plant.name}` : "this plant"} from this cell? This can't be undone.
+            <div style={{ display: "flex", gap: ".5rem", marginTop: ".5rem" }}>
+              <button className="btn-d" style={{ flex: 1 }} onClick={onClear}>Yes, Remove</button>
+              <button className="btn-s" onClick={() => setConfirmClear(false)}>Keep</button>
+            </div>
+          </div>
+        )}
+
         <div className="m-acts">
           <button className="btn-p" disabled={!plantId || (spanChanged && !resizeFits)}
             onClick={() => onSave({
@@ -347,7 +398,9 @@ export function DetailModal({ cell, cellKey, zoneName, zone, allPlants, onCustom
             Save
           </button>
           <button className="btn-s" onClick={onClose}>Cancel</button>
-          {cell.plantId && <button className="btn-d" onClick={onClear}>Clear Cell</button>}
+          {cell.plantId && !confirmClear && (
+            <button className="btn-d" onClick={() => setConfirmClear(true)}>Clear Cell</button>
+          )}
         </div>
     </BottomSheet>
   );

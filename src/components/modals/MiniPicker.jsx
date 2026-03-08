@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { SPAN_PRESETS } from "@/constants/ui";
 import { spanFits } from "@/utils/grid";
-import { getConflictingPickerIds } from "@/utils/companions";
+import { getConflictingPickerIds, getConflictsForPlant } from "@/utils/companions";
 
 export function MiniPicker({ pos, allPlants, zone, startKey, onConfirm, onClose }) {
   const [type,      setType]      = useState("all");
@@ -28,6 +28,12 @@ export function MiniPicker({ pos, allPlants, zone, startKey, onConfirm, onClose 
     if (zone?.type !== "raised") return new Set();
     return getConflictingPickerIds(zone.cells || {}, zone.w, zone.h, startRow, startCol, spanW, spanH, allPlants);
   }, [zone, startRow, startCol, spanW, spanH, allPlants]);
+
+  // Specific conflicting neighbor names for the selected plant
+  const conflictingNeighbors = useMemo(() => {
+    if (!selId || !fits || !conflictIds.has(selId) || zone?.type !== "raised") return [];
+    return getConflictsForPlant(zone.cells || {}, zone.w, zone.h, startRow, startCol, spanW, spanH, selId, allPlants);
+  }, [selId, fits, conflictIds, zone, startRow, startCol, spanW, spanH, allPlants]);
 
   const plantTypes = ["all", "vegetable", "fruit", "herb", "flower", "custom"];
   const filtered = allPlants.filter(p=>{
@@ -81,7 +87,7 @@ export function MiniPicker({ pos, allPlants, zone, startKey, onConfirm, onClose 
       </div>
 
       <div className="mp-divider"/>
-      <div className="mp-span-label">Plant Size (sq ft)</div>
+      <div className="mp-span-label">Space Needed (sq ft)</div>
       <div className="mp-span-grid">
         {SPAN_PRESETS.map(p=>{
           const active = !useCustom && spanW===p.w && spanH===p.h;
@@ -111,9 +117,9 @@ export function MiniPicker({ pos, allPlants, zone, startKey, onConfirm, onClose 
           ⚠️ {outOfBounds?"Extends outside zone":"Overlaps another plant"}. Choose a different size or cell.
         </div>
       )}
-      {selId && fits && conflictIds.has(selId) && (
+      {conflictingNeighbors.length > 0 && (
         <div className="mp-warning">
-          ⚠️ Poor companion for a nearby plant — will still work, but may affect growth.
+          ⚠️ Poor companion for {conflictingNeighbors.map(p => `${p.emoji} ${p.name}`).join(", ")} — will still work, but may affect growth.
         </div>
       )}
 

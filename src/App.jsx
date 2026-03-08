@@ -12,6 +12,7 @@ import { TodayTab } from "@/components/today/TodayTab";
 import { GlobalList } from "@/components/views/GlobalList";
 import { CalendarView } from "@/components/views/CalendarView";
 import { AddGardenModal } from "@/components/modals/AddGardenModal";
+import { WelcomeModal } from "@/components/modals/WelcomeModal";
 import { MiniPicker } from "@/components/modals/MiniPicker";
 import { DetailModal } from "@/components/modals/DetailModal";
 import { SettingsModal } from "@/components/modals/SettingsModal";
@@ -20,7 +21,7 @@ export default function App() {
   const {
     data,
     addGarden, deleteGarden,
-    addZone, deleteZone,
+    addZone, deleteZone, updateZone,
     updateCell, clearCellByKey,
     addCustomPlant, paintCell,
     logCellCare, logZoneWatering,
@@ -35,7 +36,21 @@ export default function App() {
   const [detailCell,     setDetailCell]     = useState(null);
   const [miniPicker,     setMiniPicker]     = useState(null);
   const [showSettings,   setShowSettings]   = useState(false);
+  const [showWelcome,    setShowWelcome]    = useState(
+    () => data.gardens.length === 0 && !localStorage.getItem("gp-v5-welcomed")
+  );
   const importRef = useRef();
+
+  // Derived booleans for Today tab empty states
+  const hasGardens = data.gardens.length > 0;
+  const hasPlants  = data.gardens.some(g =>
+    g.zones.some(z => Object.values(z.cells || {}).some(c => c.plantId))
+  );
+
+  function dismissWelcome() {
+    localStorage.setItem("gp-v5-welcomed", "1");
+    setShowWelcome(false);
+  }
 
   // Weather
   const settings = data.settings || {};
@@ -145,6 +160,9 @@ export default function App() {
                 weatherError={weatherError}
                 frostThresholdF={settings.frostThresholdF ?? 35}
                 city={loc.city}
+                hasGardens={hasGardens}
+                hasPlants={hasPlants}
+                onGoToGarden={() => setTab("garden")}
               />
             )}
 
@@ -178,6 +196,7 @@ export default function App() {
                         allPlants={allPlants}
                         onAddZone={z => addZone(activeGardenId, z)}
                         onDeleteZone={id => deleteZone(activeGardenId, id)}
+                        onUpdateZone={z => updateZone(activeGardenId, z.id, z)}
                         onDone={() => setLayoutMode(false)}
                       />
                     : <GardenPlantView
@@ -216,6 +235,13 @@ export default function App() {
             onClose={() => setShowSettings(false)}
             onExport={exportData}
             onImport={() => importRef.current?.click()}
+          />
+        )}
+
+        {showWelcome && (
+          <WelcomeModal
+            onCreateGarden={() => { dismissWelcome(); setShowAddGarden(true); }}
+            onClose={dismissWelcome}
           />
         )}
 

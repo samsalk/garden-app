@@ -76,6 +76,22 @@ export function getZoneConflicts(cells, zoneW, zoneH, allPlants) {
 }
 
 /**
+ * For the MiniPicker warning text: returns the neighbor plant objects that
+ * conflict specifically with the given plantId at the proposed placement.
+ */
+export function getConflictsForPlant(cells, zoneW, zoneH, row, col, spanW, spanH, plantId, allPlants) {
+  const ownKeys = [];
+  for (let dr = 0; dr < spanH; dr++)
+    for (let dc = 0; dc < spanW; dc++)
+      ownKeys.push(`${row + dr},${col + dc}`);
+  const nbIds = neighborPlantIds(cells, zoneW, zoneH, ownKeys);
+  return nbIds
+    .filter(nid => plantsConflict(plantId, nid, allPlants))
+    .map(nid => allPlants.find(p => p.id === nid))
+    .filter(Boolean);
+}
+
+/**
  * For the MiniPicker: returns a Set of plant IDs that would conflict with
  * the existing neighbors of the proposed placement (row, col, spanW, spanH).
  */

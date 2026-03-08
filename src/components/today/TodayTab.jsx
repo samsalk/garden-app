@@ -3,7 +3,7 @@ import { TaskCard } from "./TaskCard";
 import { WeatherBar } from "./WeatherBar";
 import { EmptyState } from "@/components/common/EmptyState";
 
-export function TodayTab({ careData, onLog, onLogWatering, weather, weatherLoading, weatherError, frostThresholdF, city }) {
+export function TodayTab({ careData, onLog, onLogWatering, weather, weatherLoading, weatherError, frostThresholdF, city, hasGardens, hasPlants, onGoToGarden }) {
   const { critical, due, soon } = careData;
   const total = critical.length + due.length + soon.length;
 
@@ -47,7 +47,25 @@ export function TodayTab({ careData, onLog, onLogWatering, weather, weatherLoadi
       />
 
       {total === 0 ? (
-        <EmptyState icon="✅" title="All caught up!" text="No care tasks due today or overdue." />
+        !hasGardens ? (
+          <EmptyState
+            icon="🌿"
+            title="No garden yet"
+            text="Create your first garden to start tracking plants and care tasks."
+            actionLabel="Go to Garden"
+            onAction={onGoToGarden}
+          />
+        ) : !hasPlants ? (
+          <EmptyState
+            icon="🌱"
+            title="Nothing planted yet"
+            text="Head to your garden, tap any bed cell, and assign a plant to start tracking care."
+            actionLabel="Go to Garden"
+            onAction={onGoToGarden}
+          />
+        ) : (
+          <EmptyState icon="✅" title="All caught up!" text="No care tasks due today. Check back tomorrow!" />
+        )
       ) : (
         <>
           {renderBand(critical, "🔴 OVERDUE", "var(--color-critical)", "rgba(192,0,0,.07)")}

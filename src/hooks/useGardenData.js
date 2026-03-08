@@ -137,6 +137,41 @@ export function useGardenData() {
     }));
   };
 
+  const updateZone = (gId, zId, updates) => {
+    setData(d => {
+      const g = d.gardens.find(x => x.id === gId);
+      const z = g?.zones.find(x => x.id === zId);
+      if (!z) return d;
+
+      const newW = updates.w !== undefined ? updates.w : z.w;
+      const newH = updates.h !== undefined ? updates.h : z.h;
+
+      // Prune cells that fall outside a shrunken boundary
+      let newCells = { ...(z.cells || {}) };
+      if (newW < z.w || newH < z.h) {
+        const gone = new Set(
+          Object.keys(newCells).filter(k => {
+            const [r, c] = k.split(",").map(Number);
+            return r >= newH || c >= newW;
+          })
+        );
+        // Also evict occupied-by cells whose primary was pruned
+        for (const [k, cell] of Object.entries(newCells)) {
+          if (cell.occupiedBy && gone.has(cell.occupiedBy)) gone.add(k);
+        }
+        for (const k of gone) delete newCells[k];
+      }
+
+      return {
+        ...d,
+        gardens: d.gardens.map(g => g.id !== gId ? g : {
+          ...g,
+          zones: g.zones.map(z => z.id !== zId ? z : { ...z, ...updates, cells: newCells })
+        })
+      };
+    });
+  };
+
   const updateZoneWateringFreq = (gId, zId, days) => {
     setData(d => ({
       ...d,
@@ -153,6 +188,7 @@ export function useGardenData() {
     deleteGarden,
     addZone,
     deleteZone,
+    updateZone,
     updateCell,
     clearCellByKey,
     addCustomPlant,
