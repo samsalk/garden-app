@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { geocodeZip } from "@/hooks/useWeather";
-import { useDragToClose } from "@/hooks/useDragToClose";
+import { BottomSheet } from "@/components/modals/BottomSheet";
 
 export function SettingsModal({ settings, onSave, onClose, onExport, onImport }) {
   const loc = settings.location || {};
@@ -12,7 +12,6 @@ export function SettingsModal({ settings, onSave, onClose, onExport, onImport })
   const [frost,  setFrost]  = useState(settings.frostThresholdF ?? 35);
   const [busy,   setBusy]   = useState(false);
   const [err,    setErr]    = useState(null);
-  const { modalStyle, handleProps } = useDragToClose(onClose);
 
   async function handleLookup() {
     if (!zip.trim()) return;
@@ -38,66 +37,63 @@ export function SettingsModal({ settings, onSave, onClose, onExport, onImport })
   }
 
   return (
-    <div className="overlay" onClick={onClose}>
-      <div className="modal" style={modalStyle} onClick={e => e.stopPropagation()}>
-        <div className="modal-drag" {...handleProps}/>
-        <div className="modal-title">⚙️ Settings</div>
+    <BottomSheet onClose={onClose}>
+      <div className="modal-title">⚙️ Settings</div>
 
-        <div className="field">
-          <label className="lbl">Location (for weather)</label>
-          <div style={{ display: "flex", gap: ".4rem", alignItems: "center" }}>
-            <input
-              className="inp" style={{ flex: 1, marginBottom: 0 }}
-              value={zip}
-              onChange={e => setZip(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handleLookup()}
-              placeholder="ZIP code (e.g. 94102)"
-              maxLength={5}
-            />
-            <button className="btn-s" style={{ whiteSpace: "nowrap", marginBottom: 0 }} onClick={handleLookup} disabled={busy || !zip.trim()}>
-              {busy ? "…" : "Look up"}
-            </button>
-          </div>
-          {err && <div style={{ fontSize: ".72rem", color: "#b00", marginTop: ".3rem" }}>⚠️ {err}</div>}
-          {city && (
-            <div style={{ fontSize: ".72rem", color: "var(--color-planted)", marginTop: ".35rem" }}>
-              📍 {city}, {state} · {typeof lat === "number" ? lat.toFixed(4) : lat}°N, {typeof lng === "number" ? Math.abs(lng).toFixed(4) : Math.abs(lng)}°W
-            </div>
-          )}
-        </div>
-
-        <div className="field">
-          <label className="lbl">Frost alert threshold (°F)</label>
+      <div className="field">
+        <label className="lbl">Location (for weather)</label>
+        <div style={{ display: "flex", gap: ".4rem", alignItems: "center" }}>
           <input
-            type="number" className="inp"
-            min={20} max={50} value={frost}
-            onChange={e => setFrost(e.target.value)}
+            className="inp" style={{ flex: 1, marginBottom: 0 }}
+            value={zip}
+            onChange={e => setZip(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleLookup()}
+            placeholder="ZIP code (e.g. 94102)"
+            maxLength={5}
           />
-          <div style={{ fontSize: ".72rem", color: "var(--mut)", marginTop: ".25rem" }}>
-            Alert shows when any day's low is below this temperature.
-          </div>
+          <button className="btn-s" style={{ whiteSpace: "nowrap", marginBottom: 0 }} onClick={handleLookup} disabled={busy || !zip.trim()}>
+            {busy ? "…" : "Look up"}
+          </button>
         </div>
-
-        <div className="field">
-          <label className="lbl">Data</label>
-          <div style={{ display: "flex", gap: ".5rem" }}>
-            <button className="btn-s" style={{ flex: 1 }} onClick={() => { onExport?.(); onClose(); }}>
-              ⬇ Export JSON
-            </button>
-            <button className="btn-s" style={{ flex: 1 }} onClick={() => { onImport?.(); onClose(); }}>
-              ⬆ Import JSON
-            </button>
+        {err && <div style={{ fontSize: ".72rem", color: "#b00", marginTop: ".3rem" }}>⚠️ {err}</div>}
+        {city && (
+          <div style={{ fontSize: ".72rem", color: "var(--color-planted)", marginTop: ".35rem" }}>
+            📍 {city}, {state} · {typeof lat === "number" ? lat.toFixed(4) : lat}°N, {typeof lng === "number" ? Math.abs(lng).toFixed(4) : Math.abs(lng)}°W
           </div>
-          <div style={{ fontSize: ".72rem", color: "var(--mut)", marginTop: ".25rem" }}>
-            Export backs up all gardens, plants, and settings.
-          </div>
-        </div>
+        )}
+      </div>
 
-        <div className="m-acts">
-          <button className="btn-p" onClick={handleSave}>Save</button>
-          <button className="btn-s" onClick={onClose}>Cancel</button>
+      <div className="field">
+        <label className="lbl">Frost alert threshold (°F)</label>
+        <input
+          type="number" className="inp"
+          min={20} max={50} value={frost}
+          onChange={e => setFrost(e.target.value)}
+        />
+        <div style={{ fontSize: ".72rem", color: "var(--mut)", marginTop: ".25rem" }}>
+          Alert shows when any day's low is below this temperature.
         </div>
       </div>
-    </div>
+
+      <div className="field">
+        <label className="lbl">Data</label>
+        <div style={{ display: "flex", gap: ".5rem" }}>
+          <button className="btn-s" style={{ flex: 1 }} onClick={() => { onExport?.(); onClose(); }}>
+            ⬇ Export JSON
+          </button>
+          <button className="btn-s" style={{ flex: 1 }} onClick={() => { onImport?.(); onClose(); }}>
+            ⬆ Import JSON
+          </button>
+        </div>
+        <div style={{ fontSize: ".72rem", color: "var(--mut)", marginTop: ".25rem" }}>
+          Export backs up all gardens, plants, and settings.
+        </div>
+      </div>
+
+      <div className="m-acts">
+        <button className="btn-p" onClick={handleSave}>Save</button>
+        <button className="btn-s" onClick={onClose}>Cancel</button>
+      </div>
+    </BottomSheet>
   );
 }

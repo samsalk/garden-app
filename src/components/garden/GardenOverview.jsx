@@ -3,7 +3,7 @@ import { ZONE_TYPES, ZONE_COLORS } from "@/constants/zones";
 import { rectsOverlap } from "@/utils/grid";
 import { AddZoneModal } from "@/components/modals/AddZoneModal";
 
-export function GardenOverview({ garden, allPlants, onSelectZone, onAddZone, onDeleteZone }) {
+export function GardenOverview({ garden, allPlants, onSelectZone, onAddZone, onDeleteZone, onDone }) {
   const GC = 48, GAP = 2;
   const [drawMode,      setDrawMode]      = useState(false);
   const [selectedCells, setSelectedCells] = useState(new Set());
@@ -74,6 +74,7 @@ export function GardenOverview({ garden, allPlants, onSelectZone, onAddZone, onD
           <>
             <button className="btn-s" onClick={() => setDrawMode(true)}>✏️ Draw Zone</button>
             <button className="btn-s" onClick={() => setShowForm(true)}>＋ Add Zone</button>
+            {onDone && <button className="btn-p" onClick={onDone}>✓ Done</button>}
           </>
         )}
       </div>
@@ -120,7 +121,7 @@ export function GardenOverview({ garden, allPlants, onSelectZone, onAddZone, onD
                   }}
                   onClick={() => {
                     if (drawMode) { toggleCell(r, c); return; }
-                    if (zone && ZONE_TYPES.find(t => t.id === zone.type)?.plantable) onSelectZone(zone.id);
+                    if (zone && ZONE_TYPES.find(t => t.id === zone.type)?.plantable) onSelectZone?.(zone.id);
                   }}
                   data-gr={`${r},${c}`}
                   title={zone ? zone.name : drawMode ? "Tap to select" : ""}
@@ -136,13 +137,13 @@ export function GardenOverview({ garden, allPlants, onSelectZone, onAddZone, onD
 
       {garden.zones.length > 0 && (
         <div>
-          <div style={{ fontSize: ".68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--mut)", margin: "1.25rem 0 .5rem" }}>Zones — click to open</div>
+          <div style={{ fontSize: ".68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--mut)", margin: "1.25rem 0 .5rem" }}>Zones</div>
           <div className="zone-legend">
             {garden.zones.map(zone => {
               const zc = ZONE_COLORS[zone.type] || ZONE_COLORS.raised, bt = ZONE_TYPES.find(t => t.id === zone.type);
               const planted = Object.values(zone.cells || {}).filter(c => c.plantId).length;
               return (
-                <div key={zone.id} className="zone-chip" style={{ borderColor: zc.border, background: zc.bg, cursor: bt?.plantable ? "pointer" : "default" }} onClick={() => bt?.plantable && onSelectZone(zone.id)}>
+                <div key={zone.id} className="zone-chip" style={{ borderColor: zc.border, background: zc.bg, cursor: "default" }}>
                   <span>{bt?.icon}</span>
                   <div>
                     <div className="zone-chip-name" style={{ color: zc.text }}>{zone.name}</div>

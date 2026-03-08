@@ -1,10 +1,14 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { STATUSES } from "@/constants/ui";
 import { getZoneConflicts } from "@/utils/companions";
+
+// Zone types that should show companion conflict warnings
+const CONFLICT_ZONE_TYPES = new Set(["raised", "inground"]);
 
 export function ZonePlantGrid({ zone, allPlants, activePlant, onCellClick, onCellPaint }) {
   const PC=54, GAP=3;
   const LABEL_COL=24, LABEL_ROW=20;
+  const [dismissed, setDismissed] = useState(new Set());
 
   const gridStyle = {
     display: "grid",
@@ -93,10 +97,13 @@ export function ZonePlantGrid({ zone, allPlants, activePlant, onCellClick, onCel
 
   const uniq = [...new Set(Object.values(cells).filter(c=>c.plantId).map(c=>c.plantId))];
 
-  // Companion conflicts — only for raised beds (not containers, paths, lawn)
-  const conflicts = zone.type === "raised"
+  // Companion conflicts — raised beds and in-ground zones (not containers, paths, lawn)
+  const allConflicts = CONFLICT_ZONE_TYPES.has(zone.type)
     ? getZoneConflicts(cells, zone.w, zone.h, allPlants)
     : [];
+  const conflicts = allConflicts.filter(({ plant1, plant2 }) =>
+    !dismissed.has([plant1.id, plant2.id].sort().join("|"))
+  );
 
   return (
     <div>
@@ -115,13 +122,20 @@ export function ZonePlantGrid({ zone, allPlants, activePlant, onCellClick, onCel
           {conflicts.map(({plant1, plant2}) => {
             const isMint = plant1.conflictsWithAll || plant2.conflictsWithAll;
             const mintPlant = plant1.conflictsWithAll ? plant1 : plant2;
-            const otherPlant = plant1.conflictsWithAll ? plant2 : plant1;
+            const conflictKey = [plant1.id, plant2.id].sort().join("|");
             return (
-              <div key={`${plant1.id}|${plant2.id}`} className="conflict-row">
-                {isMint
-                  ? <>{mintPlant.emoji} <strong>{mintPlant.name}</strong> spreads aggressively — move to a container</>
-                  : <>{plant1.emoji} <strong>{plant1.name}</strong> &amp; {plant2.emoji} <strong>{plant2.name}</strong> are poor neighbors</>
-                }
+              <div key={conflictKey} className="conflict-row">
+                <span className="conflict-text">
+                  {isMint
+                    ? <>{mintPlant.emoji} <strong>{mintPlant.name}</strong> spreads aggressively — move to a container</>
+                    : <>{plant1.emoji} <strong>{plant1.name}</strong> &amp; {plant2.emoji} <strong>{plant2.name}</strong> are poor neighbors</>
+                  }
+                </span>
+                <button
+                  className="conflict-dismiss"
+                  onClick={() => setDismissed(prev => new Set([...prev, conflictKey]))}
+                  title="Dismiss this warning"
+                >✕</button>
               </div>
             );
           })}

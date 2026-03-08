@@ -1,5 +1,6 @@
 import { STATUSES } from "@/constants/ui";
 import { fmtDateFull } from "@/utils/date";
+import { EmptyState } from "@/components/common/EmptyState";
 
 export function ZoneListView({ zone, allPlants, onEditCell }) {
   const rows = [];
@@ -9,7 +10,7 @@ export function ZoneListView({ zone, allPlants, onEditCell }) {
       if (cell?.plantId) rows.push({ key, r, c, cell, plant:allPlants.find(p=>p.id===cell.plantId) });
     }
   }
-  if (!rows.length) return <div style={{textAlign:"center",padding:"2rem",color:"var(--mut)",fontSize:".88rem"}}>No plants here yet.</div>;
+  if (!rows.length) return <EmptyState compact text="No plants here yet." />;
   return (
     <div style={{overflowX:"auto"}}>
       <table className="list-table">

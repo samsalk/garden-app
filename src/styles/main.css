@@ -90,12 +90,21 @@ html, body, #root {
 .view-toggle { display: flex; gap: 2px; background: var(--Cd); border-radius: 6px; padding: 2px; }
 .vt-btn { padding: .28rem .6rem; border-radius: 4px; font-size: .75rem; cursor: pointer; border: none; background: transparent; color: var(--mut); font-family: var(--font-body); }
 .vt-btn.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.1); }
-.content { flex: 1; overflow: auto; padding: 1.25rem; }
+.content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; padding: 1.25rem; }
 
 /* BREADCRUMB */
 .breadcrumb { display: flex; align-items: center; gap: .4rem; font-size: .78rem; color: var(--mut); margin-bottom: 1rem; flex-wrap: wrap; }
 .bc-link { cursor: pointer; color: var(--T); font-weight: 500; }
 .bc-link:hover { text-decoration: underline; }
+
+/* GARDEN PLANT VIEW */
+.gpv-header { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; margin-bottom: .85rem; flex-wrap: wrap; }
+.gpv-layout-btn { padding: .3rem .75rem; background: var(--Cd); border: 1.5px solid var(--bdr); border-radius: 6px; font-size: .78rem; font-weight: 500; cursor: pointer; font-family: var(--font-body); color: var(--mut); white-space: nowrap; }
+.gpv-layout-btn:hover { background: var(--bdr); color: var(--ink); }
+.zone-section { margin-bottom: 1.75rem; }
+.zone-section-head { display: flex; align-items: center; gap: .5rem; padding-left: .65rem; margin-bottom: .55rem; }
+.zone-section-name { font-weight: 700; font-size: .9rem; }
+.zone-section-meta { font-size: .72rem; color: var(--mut); }
 
 /* GARDEN OVERVIEW */
 .garden-toolbar { display: flex; align-items: center; gap: .75rem; margin-bottom: 1rem; flex-wrap: wrap; }
@@ -103,7 +112,7 @@ html, body, #root {
 .garden-sub { font-size: .78rem; color: var(--mut); margin-top: .1rem; }
 .draw-hint { background: rgba(196,98,45,.1); border: 1px solid rgba(196,98,45,.3); border-radius: 6px; padding: .45rem .75rem; font-size: .75rem; color: var(--T); margin-bottom: .75rem; }
 .garden-grid-wrap { overflow: auto; -webkit-overflow-scrolling: touch; user-select: none; }
-.gcell { flex-shrink: 0; border-radius: 4px; border: 2px solid; position: relative; display: flex; align-items: center; justify-content: center; touch-action: none; }
+.gcell { flex-shrink: 0; border-radius: 4px; border: 2px solid; position: relative; display: flex; align-items: center; justify-content: center; touch-action: manipulation; }
 .gcell.empty { border-color: var(--bdr); background: rgba(0,0,0,.025); }
 .gcell.draw-mode { cursor: crosshair; }
 .gcell.draw-mode:hover { background: rgba(196,98,45,.07); border-color: rgba(196,98,45,.3); }
@@ -195,11 +204,12 @@ html, body, #root {
 .mp-warning { font-size: .7rem; color: #b00; margin-top: .35rem; }
 .mp-acts { display: flex; gap: .4rem; margin-top: .65rem; }
 
-/* MODALS */
+/* MODALS / BOTTOM SHEET */
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 500; display: flex; align-items: flex-end; justify-content: center; backdrop-filter: blur(2px); }
-.modal { background: #fff; border-radius: 16px 16px 0 0; width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto; padding: 1.35rem 1.35rem 2rem; }
-.modal-drag { width: 36px; height: 4px; background: var(--bdr); border-radius: 2px; margin: 0 auto .7rem; padding: 10px 24px; box-sizing: content-box; background-clip: content-box; cursor: grab; }
-.modal-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; margin-bottom: 1.1rem; }
+.modal { position: relative; background: #fff; border-radius: 16px 16px 0 0; width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto; padding: 1.35rem 1.35rem 2rem; }
+.bs-close { position: absolute; top: .9rem; right: 1rem; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: none; border: none; cursor: pointer; color: var(--mut); font-size: 1rem; border-radius: 6px; line-height: 1; font-family: var(--font-body); }
+.bs-close:hover { background: var(--Cd); color: var(--ink); }
+.modal-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; margin-bottom: 1.1rem; padding-right: 2rem; }
 .field { margin-bottom: .9rem; }
 .lbl { display: block; font-size: .68rem; font-weight: 600; color: var(--mut); text-transform: uppercase; letter-spacing: .07em; margin-bottom: .3rem; }
 .inp { width: 100%; padding: .48rem .7rem; border: 1.5px solid var(--bdr); border-radius: 6px; font-family: var(--font-body); font-size: .875rem; background: #fff; color: var(--ink); }
@@ -309,8 +319,15 @@ html, body, #root {
 .cc-name { font-weight: 600; font-size: .88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cc-meta { font-size: .72rem; color: var(--mut); margin-top: 1px; }
 .cc-urgency { font-size: .72rem; font-weight: 600; margin-top: 2px; }
+.cc-weather-note { font-size: .7rem; color: var(--mut); margin-top: 3px; font-style: italic; line-height: 1.4; }
 .btn-done { padding: .35rem .75rem; background: var(--T); color: #fff; border: none; border-radius: 6px; font-family: var(--font-body); font-size: .78rem; font-weight: 600; cursor: pointer; flex-shrink: 0; }
 .btn-done:hover { background: var(--Tl); }
+
+/* PLANTING METHOD BADGE (DetailModal) */
+.pm-badge { display: inline-block; font-size: .7rem; font-weight: 500; padding: .15rem .5rem; border-radius: 20px; }
+.pm-direct     { background: rgba(74,140,60,.12); color: #3a6030; }
+.pm-transplant { background: rgba(160,120,0,.10); color: #7a5800; }
+.pm-either     { background: rgba(60,100,180,.09); color: #2a4a90; }
 
 /* CARE SCHEDULE (DetailModal) */
 .care-sched-grid { display: flex; flex-direction: column; gap: .3rem; }
@@ -362,8 +379,11 @@ html, body, #root {
 /* COMPANION CONFLICT PANEL (ZonePlantGrid) */
 .conflict-panel { margin-top: .85rem; background: #fffbf0; border: 1px solid #e8d88a; border-radius: 7px; padding: .55rem .75rem; }
 .conflict-panel-head { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: #8a6a00; margin-bottom: .3rem; }
-.conflict-row { font-size: .76rem; color: #5a4a00; padding: .18rem 0; line-height: 1.5; }
+.conflict-row { display: flex; align-items: center; gap: .4rem; font-size: .76rem; color: #5a4a00; padding: .18rem 0; line-height: 1.5; }
 .conflict-row + .conflict-row { border-top: 1px solid #f0e8a0; margin-top: .15rem; padding-top: .18rem; }
+.conflict-text { flex: 1; }
+.conflict-dismiss { flex-shrink: 0; background: none; border: none; cursor: pointer; color: #c09000; font-size: .75rem; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 4px; padding: 0; opacity: .55; font-family: var(--font-body); }
+.conflict-dismiss:hover { background: #f0e070; opacity: 1; }
 
 /* COMPANION CONFLICT BADGE (MiniPicker plant grid) */
 .mp-conflict-badge { position: absolute; top: -4px; right: -6px; font-size: .55rem; line-height: 1; pointer-events: none; }

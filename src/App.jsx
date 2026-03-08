@@ -1,15 +1,13 @@
 import { useState, useCallback, useMemo, useRef } from "react";
 import { PLANTS } from "@/constants/plants";
-import { ZONE_TYPES } from "@/constants/zones";
 import { useGardenData } from "@/hooks/useGardenData";
 import { useCareEngine } from "@/hooks/useCareEngine";
 import { useWeather } from "@/hooks/useWeather";
+import { getWeatherSignals } from "@/utils/weather";
 import { resolvePrimary } from "@/utils/grid";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { GardenOverview } from "@/components/garden/GardenOverview";
-import { ZonePlantGrid } from "@/components/garden/ZonePlantGrid";
-import { ZoneListView } from "@/components/garden/ZoneListView";
-import { PaletteBar } from "@/components/garden/PaletteBar";
+import { GardenPlantView } from "@/components/garden/GardenPlantView";
 import { TodayTab } from "@/components/today/TodayTab";
 import { GlobalList } from "@/components/views/GlobalList";
 import { CalendarView } from "@/components/views/CalendarView";
@@ -31,13 +29,11 @@ export default function App() {
   } = useGardenData();
 
   const [activeGardenId, setActiveGardenId] = useState(() => data.gardens?.[0]?.id || null);
-  const [activeZoneId,   setActiveZoneId]   = useState(null);
   const [tab,            setTab]            = useState("today");
-  const [bedView,        setBedView]        = useState("grid");
+  const [layoutMode,     setLayoutMode]     = useState(false);
   const [showAddGarden,  setShowAddGarden]  = useState(false);
   const [detailCell,     setDetailCell]     = useState(null);
   const [miniPicker,     setMiniPicker]     = useState(null);
-  const [activePlant,    setActivePlant]    = useState(null);
   const [showSettings,   setShowSettings]   = useState(false);
   const importRef = useRef();
 
@@ -48,18 +44,17 @@ export default function App() {
     loc.lat, loc.lng, settings.weatherCache, settings.weatherCacheHours ?? 3, updateWeatherCache
   );
 
-  const allPlants = useMemo(() => [...PLANTS, ...(data.customPlants || [])], [data.customPlants]);
-  const careData  = useCareEngine(data, allPlants);
+  const allPlants      = useMemo(() => [...PLANTS, ...(data.customPlants || [])], [data.customPlants]);
+  const weatherSignals = useMemo(() => getWeatherSignals(weather), [weather]);
+  const careData       = useCareEngine(data, allPlants, weatherSignals);
 
   const activeGarden = data.gardens.find(g => g.id === activeGardenId);
-  const activeZone   = activeGarden?.zones.find(z => z.id === activeZoneId);
-  const zMeta = t => ZONE_TYPES.find(x => x.id === t);
 
   // --- Actions ---
   function handleAddGarden(g) {
     addGarden(g);
     setActiveGardenId(g.id);
-    setActiveZoneId(null);
+    setLayoutMode(false);
     setShowAddGarden(false);
     setTab("garden");
   }
@@ -68,12 +63,10 @@ export default function App() {
     deleteGarden(id);
     if (activeGardenId === id) {
       setActiveGardenId(data.gardens.find(g => g.id !== id)?.id || null);
-      setActiveZoneId(null);
     }
   }
 
   function handleCellClick(gId, zId, key) {
-    if (activePlant) return;
     const g = data.gardens.find(x => x.id === gId);
     const z = g?.zones.find(x => x.id === zId);
     const cells = z?.cells || {};
@@ -89,11 +82,6 @@ export default function App() {
       setMiniPicker({ gardenId: gId, zoneId: zId, key, pos });
     }
   }
-
-  const handleCellPaint = useCallback((gId, zId, key) => {
-    if (!activePlant) return;
-    paintCell(gId, zId, key, activePlant.id);
-  }, [activePlant, paintCell]);
 
   const exportData = () => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -125,7 +113,7 @@ export default function App() {
         <Sidebar
           gardens={data.gardens}
           activeId={activeGardenId}
-          onSelect={id => { setActiveGardenId(id); setActiveZoneId(null); setTab("garden"); }}
+          onSelect={id => { setActiveGardenId(id); setLayoutMode(false); setTab("garden"); }}
           onAdd={() => setShowAddGarden(true)}
           onDelete={handleDeleteGarden}
           onExport={exportData}
@@ -142,15 +130,7 @@ export default function App() {
               <button className={`nav-tab ${tab === "allplants" ? "on" : ""}`} onClick={() => setTab("allplants")}>🌿 Plants</button>
               <button className={`nav-tab ${tab === "calendar"  ? "on" : ""}`} onClick={() => setTab("calendar")}>📅 Calendar</button>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: ".4rem" }}>
-              <button className="gear-btn" title="Settings" onClick={() => setShowSettings(true)}>⚙️</button>
-              {tab === "garden" && activeZone && (
-                <div className="view-toggle">
-                  <button className={`vt-btn ${bedView === "grid" ? "on" : ""}`} onClick={() => setBedView("grid")}>⊞ Grid</button>
-                  <button className={`vt-btn ${bedView === "list" ? "on" : ""}`} onClick={() => setBedView("list")}>☰ List</button>
-                </div>
-              )}
-            </div>
+            <button className="gear-btn" title="Settings" onClick={() => setShowSettings(true)}>⚙️</button>
           </div>
 
           <div className="content">
@@ -171,13 +151,13 @@ export default function App() {
             {/* GARDEN TAB */}
             {tab === "garden" && (
               <>
-                {/* Mobile garden switcher — hidden on desktop */}
+                {/* Mobile garden switcher */}
                 {data.gardens.length > 0 && (
                   <div className="mob-garden-bar">
                     {data.gardens.map(g => (
                       <button key={g.id}
                         className={`mgb-item ${g.id === activeGardenId ? "on" : ""}`}
-                        onClick={() => { setActiveGardenId(g.id); setActiveZoneId(null); }}>
+                        onClick={() => { setActiveGardenId(g.id); setLayoutMode(false); }}>
                         🌿 {g.name}
                       </button>
                     ))}
@@ -192,85 +172,21 @@ export default function App() {
                       <div className="es-text">Create your overall garden space first, then divide it into raised beds, containers, and paths.</div>
                       <button className="btn-p" onClick={() => setShowAddGarden(true)}>Create Your First Garden</button>
                     </div>
-                  : activeZone
-                    ? <>
-                        <div className="breadcrumb">
-                          <span className="bc-link" onClick={() => setActiveZoneId(null)}>{activeGarden.name}</span>
-                          <span style={{ color: "var(--bdr)" }}>›</span>
-                          <span>{zMeta(activeZone.type)?.icon} {activeZone.name}</span>
-                        </div>
-                        <div className="bed-hdr">
-                          <div>
-                            <div className="bed-title">{zMeta(activeZone.type)?.icon} {activeZone.name}</div>
-                            <div className="bed-meta">
-                              <span className="type-badge">{zMeta(activeZone.type)?.label}</span>
-                              <span style={{ fontSize: ".75rem", color: "var(--mut)" }}>{activeZone.w}×{activeZone.h} ft</span>
-                            </div>
-                          </div>
-                          {(() => {
-                            const cells = activeZone.cells || {};
-                            const planted   = Object.values(cells).filter(c => c.plantId).length;
-                            const total     = activeZone.w * activeZone.h;
-                            const varieties = new Set(Object.values(cells).filter(c => c.plantId).map(c => c.plantId)).size;
-                            return (
-                              <div className="stat-chips">
-                                <div className="sch"><span style={{ color: "var(--T)", fontWeight: 700 }}>{planted}</span> planted</div>
-                                <div className="sch"><span style={{ color: "#4a7a3a", fontWeight: 700 }}>{total - planted}</span> open</div>
-                                <div className="sch"><span style={{ fontWeight: 700 }}>{varieties}</span> varieties</div>
-                              </div>
-                            );
-                          })()}
-                        </div>
-                        {zMeta(activeZone.type)?.plantable && (
-                          <div className="water-freq-bar">
-                            💧 Water every
-                            <input
-                              type="number" min={1} max={30}
-                              className="water-freq-inp"
-                              value={activeZone.wateringFreqDays ?? 2}
-                              onChange={e => {
-                                const d = parseInt(e.target.value);
-                                if (d > 0) updateZoneWateringFreq(activeGardenId, activeZoneId, d);
-                              }}
-                            />
-                            days
-                            <span style={{ color: "var(--mut)", fontSize: ".72rem" }}>
-                              · last watered: {activeZone.wateringLog?.slice(-1)[0]?.date || "never"}
-                            </span>
-                          </div>
-                        )}
-                        {bedView === "grid" && (
-                          <>
-                            <PaletteBar allPlants={allPlants} activePlant={activePlant} onSelect={setActivePlant} />
-                            {activePlant && (
-                              <div style={{ fontSize: ".73rem", color: "var(--mut)", marginBottom: ".75rem", display: "flex", alignItems: "center", gap: ".4rem", flexWrap: "wrap" }}>
-                                <span style={{ background: "rgba(196,98,45,.12)", padding: ".18rem .6rem", borderRadius: 20, fontWeight: 600, color: "var(--T)" }}>🎨 {activePlant.emoji} {activePlant.name}</span>
-                                <span>Click or drag to paint (1×1) · switch to Edit mode to set size</span>
-                              </div>
-                            )}
-                            <ZonePlantGrid
-                              zone={activeZone}
-                              allPlants={allPlants}
-                              activePlant={activePlant}
-                              onCellClick={key => handleCellClick(activeGardenId, activeZoneId, key)}
-                              onCellPaint={key => handleCellPaint(activeGardenId, activeZoneId, key)}
-                            />
-                          </>
-                        )}
-                        {bedView === "list" && (
-                          <ZoneListView
-                            zone={activeZone}
-                            allPlants={allPlants}
-                            onEditCell={key => setDetailCell({ gardenId: activeGardenId, zoneId: activeZoneId, key })}
-                          />
-                        )}
-                      </>
-                    : <GardenOverview
+                  : layoutMode
+                    ? <GardenOverview
                         garden={activeGarden}
                         allPlants={allPlants}
-                        onSelectZone={id => { setActiveZoneId(id); setBedView("grid"); }}
                         onAddZone={z => addZone(activeGardenId, z)}
-                        onDeleteZone={id => { deleteZone(activeGardenId, id); if (activeZoneId === id) setActiveZoneId(null); }}
+                        onDeleteZone={id => deleteZone(activeGardenId, id)}
+                        onDone={() => setLayoutMode(false)}
+                      />
+                    : <GardenPlantView
+                        garden={activeGarden}
+                        allPlants={allPlants}
+                        onCellClick={handleCellClick}
+                        onPaintCell={(gId, zId, key, plantId) => paintCell(gId, zId, key, plantId)}
+                        onEnterLayout={() => setLayoutMode(true)}
+                        onUpdateWateringFreq={(zId, days) => updateZoneWateringFreq(activeGardenId, zId, days)}
                       />
                 }
               </>

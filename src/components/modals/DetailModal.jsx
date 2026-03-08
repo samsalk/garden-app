@@ -3,7 +3,7 @@ import { SPAN_PRESETS, STATUSES } from "@/constants/ui";
 import { PLANT_CARE_TYPES, CARE_ICONS, CARE_LABELS, DEFAULT_FREQ } from "@/constants/care";
 import { spanFits } from "@/utils/grid";
 import { addDays, genId } from "@/utils/date";
-import { useDragToClose } from "@/hooks/useDragToClose";
+import { BottomSheet } from "@/components/modals/BottomSheet";
 
 export function DetailModal({ cell, cellKey, zoneName, zone, allPlants, onCustomPlant, onSave, onClear, onClose }) {
   const [r, c] = cellKey.split(",").map(Number);
@@ -17,7 +17,6 @@ export function DetailModal({ cell, cellKey, zoneName, zone, allPlants, onCustom
   const [spanH,      setSpanH]      = useState(cell.spanH       || 1);
   const [customMode,    setCustomMode]    = useState(false);
   const [showAdvCare,   setShowAdvCare]   = useState(false);
-  const { modalStyle, handleProps: dragHandleProps } = useDragToClose(onClose);
   const [nextUpPlant, setNextUpPlant] = useState(cell.nextUp?.plantId  || "");
   const [nextUpDate,  setNextUpDate]  = useState(cell.nextUp?.targetDate || "");
   const [cName,      setCName]      = useState("");
@@ -62,9 +61,7 @@ export function DetailModal({ cell, cellKey, zoneName, zone, allPlants, onCustom
   const basePlants = allPlants.filter(p => p.type !== "custom");
 
   return (
-    <div className="overlay" onClick={onClose}>
-      <div className="modal" style={modalStyle} onClick={e => e.stopPropagation()}>
-        <div className="modal-drag" {...dragHandleProps}/>
+    <BottomSheet onClose={onClose}>
         <div className="modal-title">
           {zoneName} · Row {r+1}, Col {c+1}
           {plant && <span style={{ fontWeight: 400, fontStyle: "italic", marginLeft: ".5rem", color: "var(--mut)", fontSize: ".9rem" }}>{plant.emoji} {variety || plant.name}</span>}
@@ -100,6 +97,16 @@ export function DetailModal({ cell, cellKey, zoneName, zone, allPlants, onCustom
           <div className="pib">
             <strong>{variety || plant.name}</strong>{variety ? <span style={{ color: "var(--mut)", fontWeight: 400 }}> ({plant.name})</span> : null} · {plant.type} · ~{plant.dth} days to harvest · {plant.spacing}
             {plant.notes && <div style={{ marginTop: 2, fontStyle: "italic" }}>💡 {plant.notes}</div>}
+            {plant.plantingMethod && (
+              <div style={{ marginTop: 4 }}>
+                {plant.plantingMethod === "direct"
+                  ? <span className="pm-badge pm-direct">🌱 Direct seed</span>
+                  : plant.plantingMethod === "transplant"
+                  ? <span className="pm-badge pm-transplant">🪴 Start indoors / buy transplants</span>
+                  : <span className="pm-badge pm-either">🔄 Direct seed or transplant</span>
+                }
+              </div>
+            )}
           </div>
         )}
 
@@ -342,7 +349,6 @@ export function DetailModal({ cell, cellKey, zoneName, zone, allPlants, onCustom
           <button className="btn-s" onClick={onClose}>Cancel</button>
           {cell.plantId && <button className="btn-d" onClick={onClear}>Clear Cell</button>}
         </div>
-      </div>
-    </div>
+    </BottomSheet>
   );
 }

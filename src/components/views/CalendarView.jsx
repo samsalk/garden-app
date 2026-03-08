@@ -1,6 +1,8 @@
 import { ZONE_TYPES, ZONE_COLORS } from "@/constants/zones";
 import { STATUSES, MONTHS } from "@/constants/ui";
 import { addDays, fmtDate } from "@/utils/date";
+import { PlantName } from "@/components/common/PlantName";
+import { EmptyState } from "@/components/common/EmptyState";
 
 export function CalendarView({ gardens, allPlants }) {
   const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
@@ -27,11 +29,7 @@ export function CalendarView({ gardens, allPlants }) {
         <div style={{ fontFamily: "'Lora',serif", fontSize: "1.25rem", fontWeight: 700 }}>Planting Calendar</div>
         <div style={{ fontSize: ".8rem", color: "var(--mut)", marginTop: ".15rem" }}>Expected harvests across all beds</div>
       </div>
-      <div style={{ textAlign: "center", padding: "3rem", color: "var(--mut)" }}>
-        <div style={{ fontSize: "2rem", marginBottom: ".5rem" }}>📅</div>
-        <div style={{ fontWeight: 600, color: "var(--ink)", marginBottom: ".35rem" }}>No harvest dates yet</div>
-        <div style={{ fontSize: ".85rem" }}>Add plants with planting dates to see forecasts here.</div>
-      </div>
+      <EmptyState icon="📅" title="No harvest dates yet" text="Add plants with planting dates to see forecasts here." />
     </div>
   );
 
@@ -69,8 +67,7 @@ export function CalendarView({ gardens, allPlants }) {
                 <div style={{ fontSize: "1.7rem", flexShrink: 0, opacity: item.queued ? .55 : 1 }}>{item.plant.emoji}</div>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: ".9rem", opacity: item.queued ? .7 : 1 }}>
-                    {item.cell.variety || item.plant.name}
-                    {item.cell.variety && <span style={{ fontWeight: 400, color: "var(--mut)", fontSize: ".78rem", marginLeft: ".25rem" }}>· {item.plant.name}</span>}
+                    <PlantName plant={item.plant} variety={item.cell.variety} />
                     {item.queued && <span style={{ fontSize: ".68rem", background: "rgba(74,106,58,.15)", color: "var(--color-planted)", borderRadius: 4, padding: ".08rem .35rem", marginLeft: ".4rem", fontWeight: 500 }}>queued</span>}
                     {(sw > 1 || sh > 1) && !item.queued && <span style={{ fontSize: ".72rem", color: "var(--T)", fontWeight: 600, marginLeft: ".4rem" }}>{sw}×{sh}sqft</span>}
                   </div>

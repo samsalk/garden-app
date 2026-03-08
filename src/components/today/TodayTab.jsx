@@ -1,7 +1,7 @@
 import { MONTHS } from "@/constants/ui";
-import { CareTaskCard } from "./CareTaskCard";
-import { WateringCard } from "./WateringSection";
+import { TaskCard } from "./TaskCard";
 import { WeatherBar } from "./WeatherBar";
+import { EmptyState } from "@/components/common/EmptyState";
 
 export function TodayTab({ careData, onLog, onLogWatering, weather, weatherLoading, weatherError, frostThresholdF, city }) {
   const { critical, due, soon } = careData;
@@ -11,10 +11,13 @@ export function TodayTab({ careData, onLog, onLogWatering, weather, weatherLoadi
   const dateStr = `${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][now.getDay()]} ${MONTHS[now.getMonth()]} ${now.getDate()}`;
 
   function renderTask(task, i) {
-    if (task.taskType === "watering") {
-      return <WateringCard key={`w-${task.zone.id}-${i}`} task={task} onLog={() => onLogWatering(task.garden.id, task.zone.id)} />;
-    }
-    return <CareTaskCard key={`c-${task.zone.id}-${task.cellKey}-${task.careType}`} task={task} onLog={() => onLog(task.garden.id, task.zone.id, task.cellKey, task.careType)} />;
+    const key = task.taskType === "watering"
+      ? `w-${task.zone.id}-${i}`
+      : `c-${task.zone.id}-${task.cellKey}-${task.careType}`;
+    const handleLog = task.taskType === "watering"
+      ? () => onLogWatering(task.garden.id, task.zone.id)
+      : () => onLog(task.garden.id, task.zone.id, task.cellKey, task.careType);
+    return <TaskCard key={key} task={task} onLog={handleLog} />;
   }
 
   function renderBand(tasks, label, urgencyColor, bgColor) {
@@ -44,11 +47,7 @@ export function TodayTab({ careData, onLog, onLogWatering, weather, weatherLoadi
       />
 
       {total === 0 ? (
-        <div className="today-empty">
-          <div style={{ fontSize: "2rem", marginBottom: ".5rem" }}>✅</div>
-          <div style={{ fontWeight: 600, color: "var(--ink)", marginBottom: ".35rem" }}>All caught up!</div>
-          <div style={{ fontSize: ".85rem", color: "var(--mut)" }}>No care tasks due today or overdue.</div>
-        </div>
+        <EmptyState icon="✅" title="All caught up!" text="No care tasks due today or overdue." />
       ) : (
         <>
           {renderBand(critical, "🔴 OVERDUE", "var(--color-critical)", "rgba(192,0,0,.07)")}

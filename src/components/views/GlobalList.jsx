@@ -1,6 +1,7 @@
 import { ZONE_TYPES, ZONE_COLORS } from "@/constants/zones";
 import { STATUSES } from "@/constants/ui";
 import { fmtDateFull } from "@/utils/date";
+import { EmptyState } from "@/components/common/EmptyState";
 
 export function GlobalList({ gardens, allPlants, onEditCell }) {
   const sections = [];
@@ -13,7 +14,7 @@ export function GlobalList({ gardens, allPlants, onEditCell }) {
     }
     if (rows.length) sections.push({ g, zone, rows });
   }));
-  if (!sections.length) return <div style={{ textAlign: "center", padding: "3rem 1rem", color: "var(--mut)" }}>No plants anywhere yet.</div>;
+  if (!sections.length) return <EmptyState icon="🌱" title="No plants yet" text="Add zones to your garden and start planting." />;
   return (
     <div>
       {sections.map(({ g, zone, rows }) => {
