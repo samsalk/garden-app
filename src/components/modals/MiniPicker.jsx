@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { SPAN_PRESETS } from "@/constants/ui";
 import { spanFits } from "@/utils/grid";
+import { getConflictingPickerIds } from "@/utils/companions";
 
 export function MiniPicker({ pos, allPlants, zone, startKey, onConfirm, onClose }) {
   const [type,      setType]      = useState("all");
@@ -21,6 +22,12 @@ export function MiniPicker({ pos, allPlants, zone, startKey, onConfirm, onClose 
 
   const fits = zone ? spanFits(zone.cells||{}, zone.w, zone.h, startRow, startCol, spanW, spanH) : false;
   const outOfBounds = zone ? (startCol+spanW > zone.w || startRow+spanH > zone.h) : false;
+
+  // Companion conflict badges — only for raised beds
+  const conflictIds = useMemo(() => {
+    if (zone?.type !== "raised") return new Set();
+    return getConflictingPickerIds(zone.cells || {}, zone.w, zone.h, startRow, startCol, spanW, spanH, allPlants);
+  }, [zone, startRow, startCol, spanW, spanH, allPlants]);
 
   const plantTypes = ["all", "vegetable", "fruit", "herb", "flower", "custom"];
   const filtered = allPlants.filter(p=>{
@@ -56,12 +63,21 @@ export function MiniPicker({ pos, allPlants, zone, startKey, onConfirm, onClose 
       </div>
       <input className="mp-search" placeholder="Search plants…" value={search} onChange={e=>setSearch(e.target.value)} autoFocus/>
       <div className="mp-plant-grid">
-        {filtered.map(p=>(
-          <div key={p.id} className={`mp-plant ${selId===p.id?"sel":""}`} onClick={()=>handleSelectPlant(p.id)}>
-            <div style={{fontSize:"1.2rem"}}>{p.emoji}</div>
-            <div style={{fontSize:".58rem",fontWeight:500,color:"var(--mut)",marginTop:1,lineHeight:1.2}}>{p.name}</div>
-          </div>
-        ))}
+        {filtered.map(p=>{
+          const hasConflict = conflictIds.has(p.id);
+          return (
+            <div key={p.id}
+              className={`mp-plant ${selId===p.id?"sel":""} ${hasConflict?"mp-plant-conflict":""}`}
+              title={hasConflict?"⚠️ Poor companion for nearby plants":undefined}
+              onClick={()=>handleSelectPlant(p.id)}>
+              <div style={{fontSize:"1.2rem",position:"relative",display:"inline-block"}}>
+                {p.emoji}
+                {hasConflict && <span className="mp-conflict-badge">⚠️</span>}
+              </div>
+              <div style={{fontSize:".58rem",fontWeight:500,color:hasConflict?"#a05000":"var(--mut)",marginTop:1,lineHeight:1.2}}>{p.name}</div>
+            </div>
+          );
+        })}
       </div>
 
       <div className="mp-divider"/>
@@ -93,6 +109,11 @@ export function MiniPicker({ pos, allPlants, zone, startKey, onConfirm, onClose 
       {selId && !fits && (
         <div className="mp-warning">
           ⚠️ {outOfBounds?"Extends outside zone":"Overlaps another plant"}. Choose a different size or cell.
+        </div>
+      )}
+      {selId && fits && conflictIds.has(selId) && (
+        <div className="mp-warning">
+          ⚠️ Poor companion for a nearby plant — will still work, but may affect growth.
         </div>
       )}
 

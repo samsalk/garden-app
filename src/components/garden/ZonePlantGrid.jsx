@@ -1,5 +1,6 @@
 import { useRef, useEffect } from "react";
 import { STATUSES } from "@/constants/ui";
+import { getZoneConflicts } from "@/utils/companions";
 
 export function ZonePlantGrid({ zone, allPlants, activePlant, onCellClick, onCellPaint }) {
   const PC=54, GAP=3;
@@ -91,6 +92,11 @@ export function ZonePlantGrid({ zone, allPlants, activePlant, onCellClick, onCel
 
   const uniq = [...new Set(Object.values(cells).filter(c=>c.plantId).map(c=>c.plantId))];
 
+  // Companion conflicts — only for raised beds (not containers, paths, lawn)
+  const conflicts = zone.type === "raised"
+    ? getZoneConflicts(cells, zone.w, zone.h, allPlants)
+    : [];
+
   return (
     <div>
       <div style={gridStyle}>{items}</div>
@@ -99,6 +105,24 @@ export function ZonePlantGrid({ zone, allPlants, activePlant, onCellClick, onCel
           {uniq.map(pid=>{
             const p = allPlants.find(x=>x.id===pid);
             return p ? <div key={pid} className="pl-item"><div className="pl-dot" style={{background:p.color}}/>{p.emoji} {p.name}</div> : null;
+          })}
+        </div>
+      )}
+      {conflicts.length > 0 && (
+        <div className="conflict-panel">
+          <div className="conflict-panel-head">⚠️ Companion conflicts</div>
+          {conflicts.map(({plant1, plant2}) => {
+            const isMint = plant1.conflictsWithAll || plant2.conflictsWithAll;
+            const mintPlant = plant1.conflictsWithAll ? plant1 : plant2;
+            const otherPlant = plant1.conflictsWithAll ? plant2 : plant1;
+            return (
+              <div key={`${plant1.id}|${plant2.id}`} className="conflict-row">
+                {isMint
+                  ? <>{mintPlant.emoji} <strong>{mintPlant.name}</strong> spreads aggressively — move to a container</>
+                  : <>{plant1.emoji} <strong>{plant1.name}</strong> &amp; {plant2.emoji} <strong>{plant2.name}</strong> are poor neighbors</>
+                }
+              </div>
+            );
           })}
         </div>
       )}

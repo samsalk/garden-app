@@ -68,3 +68,34 @@ export const PLANTS = [
   { id:"raspberry",  name:"Raspberry",        type:"fruit",     emoji:"🫐", color:"#c03060", dth:365, spacing:"2/sqft",   notes:"Perennial — prune canes",  defaultSpan:[1,1], careDefaults:{ pruning:14, harvest_check:2 } },
   { id:"blueberry",  name:"Blueberry",        type:"fruit",     emoji:"🫐", color:"#4040c0", dth:365, spacing:"1/sqft",   notes:"Perennial — needs acidic soil", defaultSpan:[1,1], careDefaults:{ harvest_check:2 } },
 ];
+
+// Bidirectional conflict pairs — order doesn't matter.
+// Mint is handled separately via conflictsWithAll: true on the plant object.
+export const COMPANION_CONFLICTS = [
+  // Tomato conflicts
+  ["tomato",     "broccoli"],      // brassicas suppress tomato growth
+  ["tomato",     "cauliflower"],
+  ["tomato",     "bsprouts"],
+  ["tomato",     "fennel"],        // fennel is allelopathic to most plants
+  ["tomato",     "potato"],        // share blight; keep separated
+
+  // Fennel is allelopathic to most vegetables
+  ["fennel",     "pepper"],
+  ["fennel",     "basil"],
+  ["fennel",     "cucumber"],
+  ["fennel",     "eggplant"],
+
+  // Alliums suppress legumes
+  ["onion",      "bean"],
+  ["onion",      "pea"],
+  ["garlic",     "bean"],
+  ["garlic",     "pea"],
+
+  // Potato conflicts
+  ["potato",     "cucumber"],      // stunts both crops
+  ["potato",     "pumpkin"],
+  ["potato",     "bsquash"],
+
+  // Dill vs carrot (mature dill inhibits carrot germination)
+  ["dill",       "carrot"],
+];
